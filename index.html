@@ -1,0 +1,1554 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Balance Preis DE — Survive / Healthy / Thrive</title>
+<style>
+/* German/English balance-price surface. Reads the SAME live feed as the UK staff page
+   (cppc-sandbox-viewer /balanceprice), so when Mani updates the vault the figures move with it.
+   Nothing is copied by hand — that was the whole problem this page exists to solve.
+   All four stages are shown — FLOOR, SURVIVE, HEALTHY, THRIVE — converted GBP -> EUR by the
+   in-house factor below. Floor was deliberately withheld at first (it is a last resort, not a
+   price, and a number on a page people scan invites someone to sell there); Mani asked for it on
+   2026-10-28, so it is in, styled as the warning it is rather than as another price option. */
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#14181f; --mut:#5d6675; --line:#e2e6ec;
+  --surv:#8a5a00; --survbg:#fff6e4; --heal:#0d6b3f; --healbg:#e8f7ee;
+  /* Floor reads as a caution, not as a fourth price option — it is the one figure on this page
+     nobody should be reaching for. */
+  --flr:#9a4a16; --flrbg:#fcf1e8;
+  --thrv:#1f4fd8; --thrvbg:#eaf0ff;
+  /* Second listing column gets its own hue. Sharing the blue made the two listing headings read
+     as one merged heading spanning both columns. */
+  --alt:#7a3ea8; --altbg:#f5edfb;
+  --warn:#8c1d1d; --warnbg:#fdeaea; --accent:#1f4fd8;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1116; --card:#161a21; --ink:#e8ecf2; --mut:#9aa4b4; --line:#252b35;
+  --surv:#f0b658; --survbg:#2c2210; --heal:#67d19b; --healbg:#0f2a1c;
+  --flr:#f0a06a; --flrbg:#2b1a0f;
+  --thrv:#8fb0ff; --thrvbg:#141c33;
+  --alt:#d8a8f5; --altbg:#241732;
+  --warn:#ff8f8f; --warnbg:#2c1414; --accent:#7fa2ff;}}
+*{box-sizing:border-box}
+body{margin:0;padding:22px 18px 60px;background:var(--bg);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1280px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.3px}
+.sub{color:var(--mut);font-size:13px}
+/* Language switch. Two explicit buttons rather than one toggle: a single button has to be labelled
+   with either the state or the action, and whichever you pick half the readers guess wrong. */
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  background:var(--card);flex:none}
+.lang button{border:0;background:transparent;color:var(--mut);font:600 13px/1 inherit;
+  padding:9px 15px;cursor:pointer;letter-spacing:.04em}
+.lang button+button{border-left:1px solid var(--line)}
+.lang button.on{background:var(--accent);color:#fff}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 0}
+.fx{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:7px 11px;font-size:13px}
+.fx b{font-variant-numeric:tabular-nums}
+input#q{flex:1;min-width:200px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;
+  background:var(--card);color:var(--ink);font-size:14px}
+/* Category picker. Same axis as the UK page's filter, so the two surfaces are navigated the same
+   way and a category means the same thing on both. A native <select> rather than a custom popup:
+   it takes keyboard input, renders as the phone's own picker for anyone reading this on the
+   warehouse floor, and cannot get stuck open the way a hand-rolled dropdown can. */
+.catbox{display:inline-flex;align-items:center;gap:9px;background:var(--card);
+  border:1px solid var(--line);border-radius:9px;padding:6px 8px 6px 13px;font-size:13px}
+.catbox label{color:var(--mut);white-space:nowrap}
+#cats,#skus{appearance:none;-webkit-appearance:none;background:transparent;color:var(--ink);
+  border:0;font:600 14px/1.3 inherit;padding:3px 26px 3px 4px;cursor:pointer;max-width:52vw;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+    linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 13px) 52%,calc(100% - 8px) 52%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+#cats:focus,#skus:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+#cats option,#skus option{background:var(--card);color:var(--ink);font-weight:400}
+#skus{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+/* A picked SKU is a filter that hides 80 other rows, so it has to look switched on — an idle-
+   looking control that is silently filtering is how someone concludes the data is missing. */
+.catbox.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.note{margin:16px 0;padding:13px 15px;border-radius:10px;background:var(--warnbg);
+  border:1px solid var(--line);border-left:4px solid var(--warn);font-size:13.5px}
+.note b{color:var(--warn)}
+.note .en{color:var(--mut);font-size:12.5px;display:block;margin-top:6px}
+.ladder{margin:16px 0;padding:13px 15px;border-radius:10px;background:var(--card);
+  border:1px solid var(--line);border-left:4px solid var(--accent);font-size:13.5px}
+.ladder div+div{margin-top:5px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin:16px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.tile .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.tile .v{font-size:21px;font-weight:700;margin:3px 0 1px;font-variant-numeric:tabular-nums}
+.tile .n{font-size:11.5px;color:var(--mut)}
+h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);
+  margin:26px 0 4px;font-weight:600}
+h2 .sub{text-transform:none;letter-spacing:0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px}
+.boxhead{padding:11px 15px;border-bottom:1px solid var(--line);display:flex;
+  justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.boxname{font-weight:700;font-size:15px}
+.tw{overflow-x:auto}
+/* The money columns are the point of the page, so they get fixed width and the product column
+   absorbs the rest — otherwise a long description pushes the figures off the right edge and the
+   reader has to scroll sideways to see the only numbers they came for. */
+table{border-collapse:collapse;width:100%;min-width:880px;table-layout:fixed}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600;
+  white-space:nowrap}
+tr:last-child td{border-bottom:none}
+th.n,td.n{text-align:right;white-space:nowrap;width:104px}
+th.w56,td.w56{width:56px} th.fin,td.fin{width:118px} th.src,td.src{width:168px}
+th .hsub{display:block;font-size:10px;text-transform:none;letter-spacing:0;opacity:.75;font-weight:400}
+td:nth-child(3){word-break:break-word}
+td.eur b{font-size:16px;font-variant-numeric:tabular-nums}
+td.gbp{font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+th.flr,td.flr{background:var(--flrbg)} td.flr b{color:var(--flr)}
+th.surv,td.surv{background:var(--survbg)} td.surv b{color:var(--surv)}
+th.heal,td.heal{background:var(--healbg)} td.heal b{color:var(--heal)}
+th.thrv,td.thrv{background:var(--thrvbg)} td.thrv b{color:var(--thrv)}
+td.src{font-size:11.5px;color:var(--mut);line-height:1.35}
+img.thm,svg.thm{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);
+  display:block;cursor:zoom-in;background:var(--bg);color:var(--mut)}
+svg.thm{cursor:default}
+.noimg{width:44px;height:44px;border-radius:6px;border:1px dashed var(--line);display:block}
+.mono{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ref{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--mut)}
+.desc{font-size:13.5px;margin-top:1px}
+/* A machine-assisted translation is marked, and the English original stays one hover away. An
+   unmarked German product name would end up quoted back to a supplier as if it were official. */
+.desc.tr{border-bottom:1px dotted var(--line);cursor:help;display:inline-block}
+.pill{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:20px;
+  border:1px solid var(--line);color:var(--mut);vertical-align:middle}
+.p-warn{background:var(--warnbg);color:var(--warn);border-color:transparent}
+.p-add{background:var(--healbg);color:var(--heal);border-color:transparent}
+.addedsku{color:var(--ink);font-size:13px}
+.ref s{opacity:.55}
+#sgsave{background:var(--heal);border-color:var(--heal);color:#fff}
+#sgremove{background:transparent;color:var(--warn);border-color:var(--line)}
+#sgsend{background:transparent;color:var(--accent);border-color:var(--accent)}
+.p-ok{background:var(--healbg);color:var(--heal);border-color:transparent}
+.p-spread{background:var(--survbg);color:var(--surv);border-color:transparent}
+/* Tabs */
+.tabs{display:flex;gap:6px;margin:16px 0 0;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;color:var(--mut);cursor:pointer;
+  font:600 14px/1 inherit;padding:11px 15px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+/* Calculator */
+/* The VAT rate was queried once and settled. It stays recorded — quietly, not as a warning — so
+   the next person to notice that 19% is the statutory rate finds the answer instead of reopening it. */
+.vatnote{font-size:12.5px;color:var(--mut);margin:16px 0 0;line-height:1.5}
+.calcbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;margin:16px 0}
+.calcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.calcgrid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--mut)}
+.calcgrid input,.calcgrid select{padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+  background:var(--bg);color:var(--ink);font:15px/1.2 inherit;width:100%}
+.calcgrid input:focus,.calcgrid select:focus{outline:2px solid var(--accent);outline-offset:1px}
+.refresh{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+  padding:8px 13px;font:13px/1.2 inherit;cursor:pointer;white-space:nowrap}
+.refresh:hover{border-color:var(--accent);color:var(--accent)}
+.refresh:disabled{opacity:.55;cursor:default}
+.calcfound{margin-top:12px;font-size:13px;color:var(--mut);min-height:20px}
+.calcfound b{color:var(--ink)}
+.calcfound .hit{display:inline-block;background:var(--healbg);color:var(--heal);
+  border-radius:6px;padding:2px 8px;margin-right:7px;font-size:11.5px;font-weight:600}
+.calcfound .miss{display:inline-block;background:var(--warnbg);color:var(--warn);
+  border-radius:6px;padding:2px 8px;margin-right:7px;font-size:11.5px;font-weight:600}
+/* The two scenarios sit SIDE BY SIDE so you can read one against the other without scrolling —
+   stacked, the second table was off-screen exactly when you wanted to compare it with the first.
+   Below 1150px there is no room for two, so they fall back to stacking. */
+.calcwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+@media (max-width:1150px){.calcwrap{grid-template-columns:1fr}}
+.calcwrap .box{margin:0}
+/* Compact: this is a dense figure table, not prose. Every row is ONE line — the stage name and its
+   caption sit side by side rather than stacked, which is what halves the height. */
+table.calc{min-width:430px}
+/* Headings WRAP; figures do not. A wrapped "+2,61 €" is unreadable, but a heading forced onto one
+   line is what pushes the table wide enough to need sideways scrolling in the first place. */
+table.calc th,table.calc td{padding:4px 8px;white-space:normal;overflow-wrap:break-word}
+table.calc th{font-size:9.5px;letter-spacing:.02em;line-height:1.25;vertical-align:bottom}
+table.calc th .hsub{display:block;font-size:9.5px;margin-left:0}
+table.calc td.add,table.calc td.bal,table.calc td.list,table.calc td.list2{white-space:nowrap}
+table.calc td.add{font-size:12px}
+table.calc td.bal{font-size:13px}
+table.calc td.list b,table.calc td.list2 b{font-size:14px}
+/* The stage column needs enough room for "Survive" + its caption on ONE line. Left to share width
+   equally with the figure columns it got 90px, the caption wrapped to three lines, and every row
+   became 46px tall — which is what made the table look big in the first place. */
+table.calc th:first-child,table.calc td.tier{width:148px}
+table.calc .tier{font-size:12.5px;font-weight:700}
+table.calc .tier .cap{font-weight:400;font-size:10.5px;color:var(--mut);margin-left:5px;
+  white-space:nowrap}
+.calcwrap .boxhead{padding:6px 11px;display:block;white-space:normal}
+.calcwrap .boxname{font-size:12.5px;display:inline}
+.calcwrap .boxhead .sub{font-size:10.5px;display:inline;margin-left:7px}
+table.calc td.n,table.calc th.n{width:auto}
+table.calc .tier{font-weight:700;white-space:nowrap}
+table.calc td.add{color:var(--mut);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+table.calc td.bal{background:var(--survbg);font-weight:700;text-align:right;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+/* The two listing columns are DIFFERENT ANSWERS to different questions, not one wide result, so
+   they get separate hues and a hard rule between them. Sharing a colour made the two headings read
+   as a single merged heading and invited someone to take the wrong number. */
+table.calc th.listA,table.calc td.list{background:var(--thrvbg);text-align:right;
+  border-left:2px solid var(--thrv)}
+table.calc th.listA{color:var(--thrv);white-space:normal}
+table.calc td.list{white-space:nowrap}
+table.calc td.list b{font-size:17px;color:var(--thrv);font-variant-numeric:tabular-nums}
+table.calc th.listB,table.calc td.list2{background:var(--altbg);text-align:right;
+  border-left:2px solid var(--alt);font-variant-numeric:tabular-nums}
+table.calc th.listB{white-space:normal}
+table.calc td.list2{white-space:nowrap}
+table.calc th.listB{color:var(--alt)}
+table.calc td.list2{font-weight:700;font-size:15px;color:var(--alt)}
+table.calc th.listA .hsub,table.calc th.listB .hsub{opacity:.85}
+/* Each scenario's box header carries its own hue, so the two tables are told apart at a glance
+   while scrolling rather than by reading the title each time. */
+.boxhead.listAhead{border-left:4px solid var(--thrv);background:var(--thrvbg)}
+.boxhead.listAhead .boxname{color:var(--thrv)}
+.boxhead.listBhead{border-left:4px solid var(--alt);background:var(--altbg)}
+.boxhead.listBhead .boxname{color:var(--alt)}
+table.calc td.list2{background:transparent}
+table.calc td.list2 b{font-size:17px;color:var(--alt);font-variant-numeric:tabular-nums}
+table.calc td.list,table.calc td.list2{border-left:2px solid var(--line)}
+.plus{opacity:.5;font-weight:400;margin-right:3px}
+.calcfoot{font-size:12px;color:var(--mut);margin:10px 0 0;line-height:1.55}
+/* Suggest-a-fix. The people reading this page are the ones holding the physical product, so they
+   are the best source for a wrong SKU or a missing one. Suggestions go to a review queue for Mani
+   to approve — nothing typed here reaches a price or this page directly. */
+.fixbtn{display:inline-block;margin-top:5px;background:transparent;border:1px solid var(--line);
+  color:var(--mut);border-radius:7px;padding:3px 9px;font:12px/1.4 inherit;cursor:pointer}
+.fixbtn:hover{border-color:var(--accent);color:var(--accent)}
+.sgbox{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;
+  justify-content:center;padding:20px;z-index:60}
+.sgbox.on{display:flex}
+.sgcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;
+  width:min(560px,100%);max-height:92vh;overflow:auto}
+.sgcard h3{margin:0 0 3px;font-size:17px}
+.sgcard .who{font-size:13px;color:var(--mut);margin-bottom:14px}
+.sgcard label{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
+.sgcard input[type=text],.sgcard textarea{width:100%;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;background:var(--bg);color:var(--ink);font:15px/1.35 inherit}
+.sgcard textarea{min-height:72px;resize:vertical}
+.sgcard input:focus,.sgcard textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.sgprev{max-width:100%;max-height:190px;border-radius:8px;margin-top:9px;display:none}
+.sgact{display:flex;gap:9px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.sgact button{border-radius:8px;padding:9px 16px;font:600 14px/1 inherit;cursor:pointer;border:1px solid var(--line)}
+#sgcancel{background:transparent;color:var(--mut)}
+#sgsend{background:var(--accent);border-color:var(--accent);color:#fff}
+#sgsend:disabled{opacity:.55;cursor:default}
+.sgmsg{font-size:13px;margin-top:11px;min-height:18px}
+.sgmsg.ok{color:var(--heal)} .sgmsg.bad{color:var(--warn)}
+.sgnote{font-size:12px;color:var(--mut);margin-top:13px;line-height:1.5;
+  border-top:1px solid var(--line);padding-top:11px}
+.stamp{margin-top:22px;font-size:12px;color:var(--mut)}
+.err{padding:14px;border-radius:10px;background:var(--warnbg);color:var(--warn)}
+.fresh{position:fixed;right:16px;bottom:16px;background:var(--heal);color:#fff;padding:8px 14px;
+  border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s}
+.fresh.on{opacity:1}
+.lbx{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;
+  justify-content:center;padding:24px;z-index:50}
+.lbx.on{display:flex} .lbx img{max-width:92vw;max-height:88vh;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1 id="h1"></h1>
+      <div class="sub" id="tagline"></div>
+    </div>
+    <div class="lang" id="lang">
+      <button data-l="de">DEUTSCH</button><button data-l="en">ENGLISH</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span class="lang" id="cur">
+      <button data-c="eur">DE &nbsp;€</button><button data-c="gbp">UK &nbsp;£</button>
+    </span>
+    <span class="fx" id="fxbox"></span>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-v="prices"></button><button data-v="calc"></button>
+  </div>
+
+  <div id="view-prices">
+    <div class="bar">
+      <button class="refresh" id="refresh" type="button"></button>
+      <span class="catbox"><label for="cats" id="catlabel"></label><select id="cats"></select></span>
+      <span class="catbox"><label for="skus" id="skulabel"></label><select id="skus"></select></span>
+      <input id="q">
+    </div>
+
+    <div id="notes"></div>
+    <div id="out"></div>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <div id="view-calc" hidden>
+    <!-- The calculator quotes listing prices off these balance figures, so the age of the data
+         belongs here too, not only on the Prices tab. -->
+    <div class="stamp" id="stamp2" style="margin:14px 0 0"></div>
+    <div class="vatnote" id="calcWarn"></div>
+    <div class="calcbox">
+      <div class="calcgrid">
+        <label><span id="lblSku"></span>
+          <input id="cSku" list="cSkuList" autocomplete="off"><datalist id="cSkuList"></datalist></label>
+        <label><span id="lblManual"></span>
+          <input id="cManual" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label><span id="lblChan"></span>
+          <select id="cChan">
+            <option value="30">Amazon — 30%</option>
+            <option value="25">eBay — 25%</option>
+            <option value="20">Shopify — 20%</option>
+          </select></label>
+        <label><span id="lblFee"></span>
+          <input id="cFee" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label><span id="lblVat"></span>
+          <input id="cVat" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label><span id="lblExtra"></span>
+          <input id="cExtra" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label><span id="lblPost"></span>
+          <input id="cPost" type="text" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <div class="calcfound" id="cFound"></div>
+    </div>
+    <div id="calcOut"></div>
+  </div>
+</div>
+
+<div class="fresh" id="fresh"></div>
+<div class="lbx" id="lbx"><img id="lbximg" alt=""></div>
+
+<div class="sgbox" id="sgbox">
+  <div class="sgcard">
+    <h3 id="sgtitle"></h3>
+    <div class="who"><b id="sgsku"></b><span id="sgdesc"></span></div>
+
+    <!-- Nothing here reports to Mani (Mani 2026-08-07: "no need to spot this to mani for german
+         html"). So the fields that only existed to make a queue submission readable — your name,
+         a note, a photo upload — are gone with it. What remains is the one thing that changes this
+         screen: the SKU. The photo still comes from the feed automatically when the typed SKU
+         exists on another row. -->
+    <label for="sgcorrect" id="sglcorrect"></label>
+    <input type="text" id="sgcorrect" autocomplete="off" spellcheck="false">
+
+    <div class="sgmsg" id="sgmsg"></div>
+    <div class="sgact">
+      <button id="sgcancel" type="button"></button>
+      <button id="sgremove" type="button" hidden></button>
+      <button id="sgsave" type="button"></button>
+    </div>
+    <div class="sgnote" id="sglocalwhy"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------------------------
+   ONE source of truth. The UK staff page reads this same edge function; so does this page. The
+   only transforms on this side are GBP -> EUR at the in-house factor, and language. If Mani
+   changes a price in the vault, both surfaces move within seconds — which is exactly the failure
+   this page was built to stop (German figures drifting behind because someone had to retype them).
+   --------------------------------------------------------------------------------------------- */
+const FEED = "https://qobwxdaazzcmpwcjycyy.supabase.co/functions/v1/balanceprice-net-feed";
+const FX = 1.2;                       // £ -> € in-house factor, set by Mani (was 1.4 until 2026-08-07)
+/* CURRENCY. The feed is priced in pounds; Germany sells in euro. Showing the UK figure is therefore
+   not a conversion at all — it is the untouched source number, which is exactly why it is worth
+   being able to switch to: it is the one view with no in-house factor applied to it. */
+let CUR = localStorage.getItem("bp_cur") || "eur";
+const rate = () => CUR === "eur" ? FX : 1;
+const DEFAULT_CAT = "Lampshades";     // same landing category as the UK page
+
+const $  = id => document.getElementById(id);
+const esc = v => String(v==null?"":v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let ROWS=[], CAT=null, SKU="", Q="", STAMP=null;
+let LANG = localStorage.getItem("bp_lang") || "de";
+
+/* ================================ INTERFACE STRINGS ==========================================
+   Every visible word lives here. Adding a string in one language only would leave a German word
+   sitting in the middle of the English page, which is how half-translated tools end up trusted in
+   neither language. */
+const T = {
+  title:      {de:"Balance Preis (DE)", en:"Balance Price (DE)"},
+  tagline:    {de:'<b>FLOOR · SURVIVE · HEALTHY · THRIVE</b> · Live aus derselben Quelle wie die UK-Seite <span class="ref">/balanceprice</span> — kein manuelles Abtippen, keine veralteten Preise. Von oben nach unten arbeiten: <b>Floor ist kein Preis, sondern die absolute Untergrenze</b> und nur im Notfall zu verwenden.',
+               en:'<b>FLOOR · SURVIVE · HEALTHY · THRIVE</b> · Live from the same source as the UK page <span class="ref">/balanceprice</span> — nothing retyped, nothing out of date. Work down from the top: <b>Floor is not a price, it is the absolute minimum</b> and a last resort only.'},
+  catLabel:   {de:"Kategorie", en:"Category"},
+  skuLabel:   {de:"SKU", en:"SKU"},
+  allSkus:    {de:n=>"Alle SKUs ("+n+")", en:n=>"All SKUs ("+n+")"},
+
+  tabPrices:  {de:"Preise", en:"Prices"},
+  tabCalc:    {de:"Preisrechner", en:"Price calculation"},
+  lblSku:     {de:"SKU eingeben oder auswählen", en:"Type or pick a SKU"},
+  lblManual:  {de:"…oder Balance Preis manuell (€)", en:"…or enter Balance Price manually (€)"},
+  lblChan:    {de:"Kanal", en:"Channel"},
+  lblFee:     {de:"Verkaufsgebühr %", en:"Selling fee %"},
+  lblExtra:   {de:"Sonstige Kosten % (PPC, Retouren, Lager, Verpackung)",
+               en:"Other costs % (PPC, returns, handling, packaging)"},
+  cExtra2:    {de:"Sonstige Kosten", en:"Other costs"},
+  cFeeBad2:   {de:"Gebühr + MwSt + sonstige Kosten müssen zusammen unter 100 % liegen.",
+               en:"Selling fee + VAT + other costs must add up to less than 100%."},
+  lblVat:     {de:"MwSt %", en:"VAT %"},
+  lblPost:    {de:"Porto / Versand (€)", en:"Postage / shipping (€)"},
+  skuPh:      {de:"z. B. LSCY290WH", en:"e.g. LSCY290WH"},
+  manualPh:   {de:"z. B. 7,49", en:"e.g. 7.49"},
+  cFoundHit:  {de:"GEFUNDEN", en:"FOUND"},
+  cFoundMiss: {de:"UNBEKANNTE SKU", en:"UNKNOWN SKU"},
+  cMissTxt:   {de:"Diese SKU steht nicht im Preis-Feed. Balance Preis unten manuell eingeben.",
+               en:"That SKU is not in the price feed. Enter a Balance Price manually below."},
+  cManualOn:  {de:"Manuell eingegebener Balance Preis — keine SKU verwendet.",
+               en:"Manually entered Balance Price — no SKU in use."},
+  cNothing:   {de:"SKU eingeben oder einen Balance Preis eintippen, um zu rechnen.",
+               en:"Type a SKU, or enter a Balance Price, to calculate."},
+  cOverride:  {de:"Manueller Betrag hat Vorrang vor der SKU.", en:"The manual amount overrides the SKU."},
+  cTier:      {de:"Stufe", en:"Stage"},
+  cManualTier:{de:"Manuell", en:"Manual"},
+  cBalance:   {de:"Balance Preis", en:"Balance Price"},
+  cBalanceSub:{de:"muss übrig bleiben", en:"must be left with us"},
+  cFee2:      {de:"Verkaufsgebühr", en:"Selling fee"},
+  cVat2:      {de:"MwSt", en:"VAT"},
+  cPost2:     {de:"Porto", en:"Postage"},
+  cListIncl:  {de:"Listenpreis INKL. Versand", en:"Listing price WITH shipping"},
+  cListInclS: {de:"Gratisversand — das Porto tragen wir, es steckt im Listenpreis",
+               en:"free shipping — we absorb the postage, it sits inside the listing price"},
+  cListExcl:  {de:"Listenpreis OHNE Versand", en:"Listing price WITHOUT shipping"},
+  cListExclS: {de:"Versand zahlt der Kunde extra — kein Porto im Listenpreis",
+               en:"customer pays shipping separately — no postage in the listing price"},
+  cResult:    {de:"= Listenpreis", en:"= Listing price"},
+  cResultSub: {de:"so listen", en:"list at this"},
+  cOfNet:     {de:p=>p+" % vom Listenpreis", en:p=>p+"% of listing price"},
+  cCosts:     {de:"Kosten", en:"Costs"},
+  cCostsSub:  {de:(tot,f,e)=>tot+" % vom Listenpreis — Gebühr "+f+" % + sonstige "+e+" %",
+               en:(tot,f,e)=>tot+"% of listing price — fee "+f+"% + other "+e+"%"},
+  cSameNote:  {de:'<b>Warum stehen zweimal dieselben Beträge?</b> „Sonstige Kosten" und „MwSt" '
+                 +'rechnen beide vom selben Nettobetrag. Solange beide Sätze 20 % sind, ergeben sie '
+                 +'zwangsläufig denselben Euro-Betrag — das ist kein Fehler und keine Doppelzählung. '
+                 +'Ändere einen der beiden Sätze und die Spalten laufen auseinander.',
+               en:'<b>Why do two columns show the same amount?</b> "Other costs" and "VAT" are both '
+                 +'percentages of the same net amount. While both rates are 20% they must come out as '
+                 +'the same euro figure — that is not an error and nothing is counted twice. Change '
+                 +'either rate and the columns separate.'},
+  cVatWarn:   {de:'MwSt steht auf <b>20 %</b> — von Mani am 07.08.2026 so bestätigt, obwohl der '
+                 +'deutsche Regelsatz 19 % ist. Das Feld bleibt änderbar, falls für einen Fall ein '
+                 +'anderer Satz gilt.',
+               en:'VAT is set to <b>20%</b> — confirmed by Mani on 2026-08-07, although the German '
+                 +'statutory rate is 19%. The field stays editable if a different rate applies to a '
+                 +'particular case.'},
+  cFoot:      {de:'Rückwärts gerechnet: <b>Listenpreis = (Balance + Porto) ÷ (1 − Gebühr − MwSt − sonstige Kosten)</b>. '
+                 +'Alle Prozentsätze sind Anteile <b>vom Listenpreis</b> und werden addiert, nicht nacheinander '
+                 +'angewendet. ⚠️ Der Balance-Preis-Checker im deutschen Lager-Dashboard rechnet MwSt anders '
+                 +'(Steuer auf den Netto­betrag, <span class=ref>Preis ÷ 1,20</span>) und käme bei 0,85 € auf '
+                 +'1,46 € statt 1,70 € — bis er angepasst ist, weichen die beiden Werkzeuge voneinander ab. '
+                 +'Der Listenpreis wird auf den nächsten '
+                 +'Cent <b>aufgerundet</b>, damit der Balance Preis immer erreicht wird. Jede Spalte ist '
+                 +'zusätzlich auf Cent gerundet — die sichtbare Summe einer Zeile kann daher einen Cent neben '
+                 +'dem Listenpreis liegen; gerechnet wird intern ungerundet. '
+                 +'„Sonstige Kosten" steht auf <b>0</b> — PPC, Retouren, Lagerabwicklung und Verpackung sind '
+                 +'also NICHT eingerechnet und kommen noch obendrauf. Wer sie mitrechnen will, trägt einen '
+                 +'Prozentsatz in das Feld ein.',
+               en:'Worked backwards: <b>listing price = (Balance + postage) ÷ (1 − fee − VAT − other costs)</b>. '
+                 +'Every percentage is a share <b>of the listing price</b> and they add together rather than being '
+                 +'applied one after the other. ⚠️ The Balance Price Checker in the German warehouse dashboard '
+                 +'treats VAT differently (tax on the net amount, <span class=ref>price ÷ 1.20</span>) and would '
+                 +'give €1.46 for a €0.85 balance rather than €1.70 — until it is changed, the two tools disagree. '
+                 +'The listing price is <b>rounded up</b> to the next cent so the Balance '
+                 +'Price is always met. Each column is rounded to the cent too, so a visible row total can land a '
+                 +'cent either side of the listing price; the calculation itself is unrounded. '
+                 +'"Other costs" is set to <b>0</b>, so PPC, returns, warehouse handling and packaging are NOT '
+                 +'included and still have to be added on top. Type a percentage into that field to fold them in.'},
+  cFeeBad:    {de:"Gebühr muss unter 100 % liegen.", en:"The fee must be below 100%."},
+
+  fixKnow:    {de:"✎ SKU eintragen", en:"✎ Add SKU"},
+  fixEdit:    {de:"✎ SKU ändern", en:"✎ Change SKU"},
+  sgTitle:    {de:"SKU eintragen", en:"Add SKU"},
+  sgSaveLocal:{de:"SKU speichern", en:"Save SKU"},
+  sgSaved:    {de:"SKU gespeichert ✓", en:"SKU saved ✓"},
+  sgRemove:   {de:"Eintrag entfernen", en:"Remove entry"},
+  sgLocalPill:{de:"selbst eingetragen", en:"added by you"},
+  /* No "send it to Mani as well" line any more — there is no send. The note now states plainly what
+     a local entry does and does not do, because that is the only limitation left to know about. */
+  sgLocalWhy: {de:'<b>Gespeichert wird nur auf diesem Rechner.</b> Diese Seite liest den Preis-Feed, '
+                 +'sie kann nicht hineinschreiben — die SKU steht damit hier sofort richtig, aber '
+                 +'nicht im Vault, nicht bei den Kollegen und nicht in einem Listing. Wird der '
+                 +'Browser-Speicher geleert, ist der Eintrag weg.',
+               en:'<b>Saved on this computer only.</b> This page reads the price feed, it cannot write '
+                 +'to it — so the SKU is right here immediately, but not in the vault, not on anyone '
+                 +'else\'s screen and not on a listing. Clearing browser storage removes the entry.'},
+  sgNeedSku:  {de:"Bitte eine SKU eintragen.", en:"Please enter a SKU."},
+  sgImgFound: {de:s=>"Foto von "+s+" übernommen.", en:s=>"Photo taken from "+s+"."},
+  sgImgNone:  {de:"Zu dieser SKU liegt im Feed kein Foto vor — das bisherige Bild bleibt stehen.",
+               en:"No photo on record for that SKU in the feed — the existing image stays."},
+  sgCorrect:  {de:"Richtige SKU", en:"Correct SKU"},
+  sgCancel:   {de:"Abbrechen", en:"Cancel"},
+  curUkOn:    {de:"UK-Ansicht — Preise in £", en:"UK view — prices in £"},
+  curUkNote:  {de:"Originalwerte aus dem Feed, kein Umrechnungsfaktor angewendet",
+               en:"the feed's own figures, no conversion factor applied"},
+  refresh:    {de:"Jetzt aktualisieren", en:"Refresh now"},
+  refreshing: {de:"Wird geladen …", en:"Refreshing …"},
+  fx:         {de:"Umrechnung", en:"Conversion"},
+  fxnote:     {de:"firmeninterner Faktor, kein Tageskurs", en:"in-house factor, not a market rate"},
+  search:     {de:"Suchen: SKU, Finish, Beschreibung, Typ …", en:"Search: SKU, finish, description, type …"},
+  loading:    {de:"Lädt …", en:"Loading …"},
+  nohits:     {de:"Keine Treffer.", en:"Nothing matches."},
+  unreach:    {de:"Preisdienst nicht erreichbar.", en:"Could not reach the price service."},
+  rendfail:   {de:"Preise geladen, aber die Anzeige ist fehlgeschlagen: ", en:"Prices loaded but the page could not display them: "},
+  loadfail:   {de:"Laden fehlgeschlagen. ", en:"Could not load. "},
+  updated:    {de:"Preise aktualisiert", en:"Prices updated"},
+  laststamp:  {de:"Preise zuletzt aktualisiert: ", en:"Prices last updated: "},
+  selfupd:    {de:" · diese Seite aktualisiert sich innerhalb weniger Sekunden nach einer Änderung selbst.",
+               en:" · this page updates itself within a few seconds of a change."},
+
+  warnHead:   {de:"KEINE dieser Zahlen ist ein Verkaufspreis.", en:"NONE of these is a price to list at."},
+  warnBody:   {de:'Das sind Netto-Erlöse: was nach Abzug aller Verkaufskosten im Unternehmen ankommen muss. <b>Nicht enthalten:</b> MwSt · Kanal- und Verkaufsgebühren · PPC · Porto und Fracht · Retouren und Erstattungen · Lagerabwicklung · Verpackungsmaterial. Diese Kosten sind je Kanal (Amazon, eBay, Shopify, Handel) unterschiedlich, müssen für den jeweiligen Kanal berechnet und <b>oben draufgerechnet</b> werden. Der Listenpreis liegt immer HÖHER als die hier gezeigte Zahl. Bei Unsicherheit: Mani fragen.',
+               en:'These are proceeds figures: what the sale must leave us with once every selling cost has taken its share. <b>Not included:</b> VAT · channel referral and selling fees · PPC · postage and carriage · refunds and returns · warehouse handling · packing materials. Every one of them varies by channel (Amazon, eBay, Shopify, trade), so they must be worked out for the channel you are listing on and <b>added on top</b>. The shelf price is always HIGHER than the figure you see here. If you are unsure, ask Mani.'},
+
+  thriveHead: {de:"THRIVE — hier zielen.", en:"THRIVE — aim here."},
+  thriveBody: {de:"Was das Produkt einbringt, wenn es über seine Qualität verkauft wird und nicht über den Preis. Das ist das Geld, das Ware, Personal und Wachstum bezahlt. <b>Hier eröffnen.</b>",
+               en:"What this product banks when it sells on its merits rather than on price. This is the money that pays for stock, people and growth. <b>Open here.</b>"},
+  healHead:   {de:"HEALTHY — der Maßstab.", en:"HEALTHY — the standard."},
+  healBody:   {de:"Was ein gut verkauftes Produkt zurückbringen soll. Wenn die meisten Verkäufe hier landen, wird die Arbeit richtig gemacht.",
+               en:"What a well-sold product should return. If most of your sales land here, the job is being done properly."},
+  survHead:   {de:"SURVIVE — unter Soll.", en:"SURVIVE — below par."},
+  survBody:   {de:"Kein Erfolg. Das Geschäft trägt sich selbst, bringt aber zu wenig für Ware, Personal und Wachstum. Nur akzeptieren, wenn die Alternative kein Verkauf ist — nie damit eröffnen.",
+               en:"Not a win. The sale carries itself but returns too little to fund the stock, the people and the growth behind it. Accept it when the alternative is no sale — never open with it."},
+  ladderFoot: {de:'Von oben nach unten arbeiten, nie von unten nach oben. Die Spalte <b>„Thrive beruht auf“</b> sagt, wie belastbar der Thrive-Wert ist: <i>belegt</i> (dieses Produkt hat es erreicht) ist stark, <i>Schätzung aus der Kategorieregel</i> ist schwach.',
+               en:'Work down from the top, never up from the bottom. The <b>"Thrive based on"</b> column says how solid the Thrive figure is: <i>proven</i> (this product has banked it) is strong, <i>estimate from the category rule</i> is weak.'},
+
+  tProducts:  {de:"Produkte", en:"Products"},
+  tMedHeal:   {de:"Median Healthy", en:"Median Healthy"},
+  tMedHealN:  {de:"die Hälfte liegt darunter", en:"half the range sits below this"},
+  tThriveSet: {de:"Thrive gesetzt", en:"Thrive set"},
+  tOf:        {de:" von ", en:" of "},
+  tThriveSetN:{de:(ev,es)=>ev+" belegt, "+es+" aus der Kategorieregel geschätzt",
+               en:(ev,es)=>ev+" proven, "+es+" estimated from the category"},
+  tHead:      {de:"Luft nach oben", en:"Growth available"},
+  tHeadN:     {de:"wenn jeder Verkauf auf Thrive statt auf Survive landet",
+               en:"if every sale closed at Thrive instead of Survive"},
+  tBelow:     {de:"Markt unter Floor", en:"Market below floor"},
+  tBelowN:    {de:"der Marktpreis liegt unter unserem Minimum — mit Mani klären",
+               en:"the going rate is under our least acceptable price — check with Mani"},
+
+  colFinish:  {de:"Finish", en:"Finish"},
+  colProduct: {de:"Produkt", en:"Product"},
+  colFloor:   {de:"letztes Mittel", en:"last resort"},
+  floorHead:  {de:"FLOOR — nur im Notfall.", en:"FLOOR — last resort only."},
+  floorBody:  {de:"Kein normaler Preis. Das Wenigste, was wir für dieses Produkt überhaupt "
+                 +"akzeptieren. Nur hier verkaufen, wenn Thrive, Healthy und Survive wirklich "
+                 +"ausgeschlossen sind — Restposten, beschädigte Ware, oder ein Kunde, den wir "
+                 +"sonst verlieren. Noch tiefer: vorher fragen.",
+               en:"Not a normal price. The least we will accept on this product at all. Sell here "
+                 +"only once Thrive, Healthy and Survive are genuinely ruled out — clearing old "
+                 +"stock, a damaged unit, or holding a customer we would otherwise lose. To go "
+                 +"lower, ask first."},
+  colSurv:    {de:"unter Soll", en:"below par"},
+  colHeal:    {de:"der Maßstab", en:"the standard"},
+  colThrv:    {de:"hier zielen", en:"aim here"},
+  colSrc:     {de:"Thrive beruht auf", en:"Thrive based on"},
+  notset:     {de:"noch offen", en:"not yet known"},
+  nophoto:    {de:"Noch kein Foto", en:"No photo yet"},
+
+  byType:     {de:"Je Typ ein Block", en:"Each type and its products"},
+  byTypeSub:  {de:"Eine Tabelle je Typ. Diese Artikel werden als Sortiment kalkuliert, nicht als Form mit Finishes — günstigster zuerst.",
+               en:"One table per type. These are priced as a range rather than as a shape with finishes, so they read cheapest first."},
+  byFam:      {de:"Je Form ein Block, mit ihren Finishes", en:"Each shape and its finishes"},
+  byFamSub:   {de:"Eine Tabelle je Form. Die Finishes laufen von günstig nach teuer, die Leiter liest sich von unten nach oben.",
+               en:"One table per shape. Finishes run cheapest first, so the ladder reads bottom to top."},
+  singType:   {de:"Einzelprodukte", en:"Single products"},
+  singTypeN:  {de:" — nur ein Produkt in seinem Typ", en:" — one product in its type"},
+  singFam:    {de:"Einzelvarianten", en:"Single-variant items"},
+  singFamN:   {de:" — keine Finish-Reihe zum Vergleichen", en:" — no finish range to compare"},
+  nProd:      {de:n=>n+(n===1?" Produkt":" Produkte"), en:n=>n+(n===1?" product":" products")},
+  nVar:       {de:n=>n+(n===1?" Variante":" Varianten"), en:n=>n+(n===1?" variant":" variants")},
+  onePrice:   {de:n=>n+" Finishes, ein Preis", en:n=>n+" finishes, one price"},
+  spread:     {de:x=>x+"× über die Finishes", en:x=>x+"× across the finishes"},
+
+  mbfPill:    {de:"MARKT UNTER FLOOR", en:"MARKET BELOW FLOOR"},
+  mbfText:    {de:"Marktpreis unter unserem Minimum — vor dem Listen mit Mani klären",
+               en:"the going rate is under our least acceptable price — check with Mani before listing"},
+  skuPend:    {de:"SKU noch nicht vergeben", en:"SKU not set"},
+  pendNote:   {de:(n)=>"<b>"+n+(n===1?" Produkt in diesem Bereich hat":" Produkte in diesem Bereich haben")
+                 +" noch keine AIOS-SKU.</b> Sie sind über Foto und Beschreibung zu erkennen. "
+                 +"<b>Nicht gegen die PENDING-Referenz listen</b> — Mani mitteilen, welche SKU gemeint ist "
+                 +"(PENDING-Nummer angeben), dann wird sie automatisch ersetzt.",
+               en:(n)=>"<b>"+n+" product"+(n===1?"":"s")+" in this section "+(n===1?"has":"have")
+                 +" no AIOS SKU yet.</b> They are shown so you can recognise them from the photo and "
+                 +"description. <b>Do not list against the PENDING reference</b> — tell Mani which SKU "
+                 +"each one is (quote the PENDING number) and it will be replaced automatically."},
+  trNote:     {de:'<b style="color:var(--accent)">Produkttexte sind maschinell übersetzt.</b> '
+                 +'Das Original steht so im Vault, auf Englisch — SKUs, Modellnummern, Maße und '
+                 +'Finish-Kürzel bleiben immer unverändert. Unterstrichene Beschreibungen zeigen den '
+                 +'englischen Originaltext beim Daraufzeigen. Für Lieferanten oder Listings gilt das '
+                 +'Original, nicht diese Übersetzung.', en:null}
+};
+const t = (k,...a) => { const v=T[k][LANG]; return typeof v==="function" ? v(...a) : v; };
+
+/* ================================ DATA VOCABULARY ============================================
+   The feed is written in English. Categories and product types are closed vocabularies, so they
+   translate exactly. Descriptions are free text, so they go through a term glossary below —
+   marked as machine-assisted, with the original kept on hover. */
+const CAT_DE = {
+  /* Added 2026-10-28: the feed grew from 12 categories to 31, and the new ones were falling through
+     untranslated into the German view. "Wdls260520s & Metals & Clads" is left alone on purpose —
+     that is a data fault in the source, not a category, and inventing a German name for it would
+     disguise it. "Uncategorised" (177 rows) is translated but is likewise worth Mani's attention. */
+  "Cable Ties & Fixings":"Kabelbinder & Befestigung",
+  "Ceiling Fans":"Deckenventilatoren",
+  "Euro Cylinders":"Profilzylinder",
+  "Glass Shades":"Glasschirme",
+  "Lamp Holders":"Lampenfassungen",
+  "LED Drivers & Power Supplies":"LED-Treiber & Netzteile",
+  "Pendant Sets":"Pendelleuchten-Sets",
+  "Pipe Lighting":"Rohrleuchten",
+  "Plug-in Pendants":"Steckerpendelleuchten",
+  "Screws":"Schrauben",
+  "Screws & Small Parts":"Schrauben & Kleinteile",
+  "Screws & Wall Plugs":"Schrauben & Dübel",
+  "Spares & Fittings":"Ersatzteile & Zubehör",
+  "Switches & Sockets":"Schalter & Steckdosen",
+  "Table Lamps":"Tischleuchten",
+  "Wall Lights":"Wandleuchten",
+  "Wire cages":"Gitterschirme",
+  "Uncategorised":"Nicht kategorisiert",
+
+  "Adhesive tapes":"Klebebänder",
+  "Bulbs":"Leuchtmittel",
+  "Cable & Flex":"Kabel & Leitungen",
+  "Ceiling Roses & Fittings":"Deckenrosetten & Zubehör",
+  "DIY Gloves":"Arbeitshandschuhe",
+  "Garden & Outdoor Flooring":"Garten- & Außenbeläge",
+  "Lampshades":"Lampenschirme",
+  "Mail bags":"Versandtaschen",
+  "PVC Trunking & Accessories":"PVC-Kabelkanäle & Zubehör",
+  "Peel & Stick Wallpaper":"Selbstklebende Tapete",
+  "Pendant shade set":"Pendelleuchten-Set",
+  "Tile Levelling & Accessories":"Fliesen-Nivelliersystem & Zubehör"
+};
+const TYPE_DE = {
+  "2-core round flex":"2-adrige Rundleitung",
+  "2-core round flex — Hemp":"2-adrige Rundleitung — Hanf",
+  "2-core twisted flex":"2-adrige verdrillte Leitung",
+  "2-core twisted flex — Hemp":"2-adrige verdrillte Leitung — Hanf",
+  "3-core round flex":"3-adrige Rundleitung",
+  "3-core round flex — Hemp":"3-adrige Rundleitung — Hanf",
+  "3-core twisted flex":"3-adrige verdrillte Leitung",
+  "3-core twisted flex — Hemp":"3-adrige verdrillte Leitung — Hanf",
+  "Aluminium foil tape":"Aluminium-Klebeband",
+  "Artificial grass tiles":"Kunstrasenfliesen",
+  "Carton & packing tape":"Karton- & Packband",
+  "Conduit & fittings":"Installationsrohr & Formteile",
+  "Conduit boxes & covers":"Rohrdosen & Deckel",
+  "Crinkle latex DIY gloves":"Arbeitshandschuhe mit Latex-Griffbeschichtung",
+  "Fibreglass tape":"Glasfaser-Klebeband",
+  "Filament bulbs":"Filament-Leuchtmittel",
+  "Fixings & tools":"Befestigung & Werkzeug",
+  "Junction & pattress boxes":"Abzweig- & Unterputzdosen",
+  "Levelling base clips":"Nivellier-Basisclips",
+  "Levelling clips":"Nivellierlaschen",
+  "Levelling wedges":"Nivellierkeile",
+  "Masking & duct tape":"Kreppband & Gewebeband",
+  "PVC slat deck tiles":"PVC-Lamellen-Terrassenfliesen",
+  "Reusable levellers":"Wiederverwendbare Nivellierer",
+  "Screw-nut levellers":"Schraub-Nivellierer",
+  "Screws & wall plugs":"Schrauben & Dübel",
+  "Set":"Set",
+  "Tile levelling crosses":"Fliesen-Nivellierkreuze",
+  "Tile spacers":"Fliesenkreuze",
+  "Trunking & accessories":"Kabelkanäle & Zubehör",
+  "White Case Bulb":"Leuchtmittel mit weißem Gehäuse",
+  "White virgin mailing bags":"Versandtaschen aus weißem Neumaterial",
+  "Wire connectors & terminals":"Verbindungsklemmen & Klemmen"
+};
+
+/* Description glossary. Applied as ONE alternation pass over the source string, longest phrase
+   first — a single pass means a replacement can never be re-matched by a later rule, which is how
+   naive chained replaces turn "white PVC" into nonsense. Anything not listed (model codes, cap
+   fittings like E27, dimensions, wattages) passes through untouched, which is correct: those are
+   the same word in both languages and mangling them would break a search against the vault. */
+const DESC_DE = {
+  /* tapes */
+  "Aluminium foil tape":"Aluminium-Klebeband",
+  "Machine carton tape":"Maschinen-Packband",
+  "Fragile printed packing tape":"Packband „Zerbrechlich“ bedruckt",
+  "Clear packing tape":"Packband transparent",
+  "Kraft paper packing tape":"Kraftpapier-Packband",
+  "Fibreglass reinforced tape":"Glasfaserverstärktes Klebeband",
+  "Cloth duct tape":"Gewebeband",
+  "White masking tape":"Kreppband weiß",
+  "micron":"µm",
+  /* bulbs */
+  "warm white":"warmweiß", "daylight":"Tageslichtweiß",
+  "concealed fit":"Einbau", "surface fit":"Aufbau",
+  "lensed":"mit Linse", "PC cover":"PC-Abdeckung",
+  "white and black":"weiß und schwarz",
+  /* cable */
+  "2-core round flex":"2-adrige Rundleitung", "2-core twisted flex":"2-adrige verdrillte Leitung",
+  "3-core round flex":"3-adrige Rundleitung", "3-core twisted flex":"3-adrige verdrillte Leitung",
+  "cut from roll":"von der Rolle geschnitten", "all colours, one price":"alle Farben, ein Preis",
+  "roll":"Rolle", "HEMP":"HANF",
+  /* gloves */
+  "DIY gloves":"Arbeitshandschuhe",
+  "fluorescent green with black crinkle latex grip coating":"neongrün mit schwarzer Latex-Griffbeschichtung",
+  "red with black crinkle latex grip coating":"rot mit schwarzer Latex-Griffbeschichtung",
+  "per pair":"pro Paar",
+  /* outdoor flooring */
+  "Artificial grass outdoor floor tile":"Kunstrasen-Bodenfliese für außen",
+  "PVC slat outdoor deck tile":"PVC-Lamellen-Terrassenfliese",
+  "natural wood":"Naturholz",
+  /* mail bags + wallpaper */
+  "Mailing bag":"Versandtasche", "white virgin material":"weißes Neumaterial",
+  "Linen-texture peel-and-stick wall covering roll":"Selbstklebende Wandverkleidung in Leinenstruktur, Rolle",
+  /* pendant set */
+  "Vintage Retro Industrial Pendant Set":"Vintage-Retro-Industrie-Pendelset",
+  "brass holder":"Messingfassung", "shade":"Schirm", "bulb":"Leuchtmittel",
+  "contains":"enthält", "Bulb":"Leuchtmittel", "Ceiling rose":"Deckenrosette",
+  "Lampshade":"Lampenschirm", "Pendant holder":"Pendelfassung",
+  /* conduit + trunking */
+  "UPVC conduit":"UPVC-Installationsrohr",
+  "conduit elbow":"Rohrbogen", "conduit tee":"Rohr-T-Stück", "conduit coupling":"Rohrmuffe",
+  "conduit box cover":"Rohrdosen-Deckel", "conduit box":"Rohrdose",
+  "inspection tee with cover":"Inspektions-T-Stück mit Deckel",
+  "inspection elbow with cover":"Inspektionsbogen mit Deckel",
+  "male bush":"Außengewinde-Stutzen", "full thread":"Vollgewinde",
+  "GB standard":"GB-Norm", "AA grade":"Güte AA",
+  "white PVC":"weißes PVC",
+  "wall":"Wandstärke", "length":"Länge",
+  "3-way (tee)":"3-fach (T-Stück)", "2-way through":"2-fach durchgehend",
+  "2-way angle":"2-fach Winkel",
+  "screws included":"Schrauben enthalten",
+  "self-adhesive trunking":"selbstklebender Kabelkanal",
+  "trunking internal angle":"Kabelkanal-Innenecke", "trunking flat bend":"Kabelkanal-Flachbogen",
+  "trunking tee":"Kabelkanal-T-Stück", "trunking coupler":"Kabelkanal-Verbinder",
+  "trunking end cap":"Kabelkanal-Endkappe",
+  "white plastic saddle clip with base":"weiße Kunststoff-Schelle mit Sockel",
+  "Nylon cable puller":"Nylon-Einziehband", "solid core":"Vollkern",
+  /* boxes */
+  "Galvanised steel back box":"Verzinkte Stahl-Unterputzdose",
+  "copper earth terminal":"Kupfer-Erdungsklemme", "deep":"tief",
+  "outdoor weatherproof enclosure":"Außengehäuse, wetterfest",
+  "empty":"leer", "lid":"Deckel",
+  "Splash-proof socket cover":"Spritzwassergeschützte Steckdosenabdeckung",
+  "supplied without retail box":"ohne Verkaufsverpackung",
+  "UPVC junction box":"UPVC-Abzweigdose",
+  /* connectors */
+  "Inline butt connector":"Durchgangs-Verbindungsklemme",
+  "Tool-free lever connector":"Werkzeuglose Hebelklemme",
+  "Push-in connector":"Steckklemme",
+  "wire splitter":"Leitungsverteiler",
+  "clear body":"transparentes Gehäuse", "grey body":"graues Gehäuse",
+  "joinable":"koppelbar",
+  "T2 copper":"T2-Kupfer", "nylon":"Nylon",
+  /* tile levelling */
+  "Large leveller base clip":"Nivellier-Basisclip groß",
+  "Small leveller base clip":"Nivellier-Basisclip klein",
+  "Multifunction tile levelling cross":"Multifunktions-Fliesen-Nivellierkreuz",
+  "Reusable tile levelling cross":"Wiederverwendbares Fliesen-Nivellierkreuz",
+  "Reusable tile leveller":"Wiederverwendbarer Fliesen-Nivellierer",
+  "Large screw-nut tile leveller":"Schraub-Fliesennivellierer groß",
+  "Small screw-nut tile leveller":"Schraub-Fliesennivellierer klein",
+  "Tile levelling clip":"Fliesen-Nivellierlasche", "Tile levelling wedge":"Fliesen-Nivellierkeil",
+  "Tile spacer pack":"Fliesenkreuze, Packung", "Tile spacer":"Fliesenkreuz",
+  "AA quality":"Qualität AA", "A quality":"Qualität A", "B quality":"Qualität B",
+  "green pack":"grüne Packung", "yellow pack":"gelbe Packung",
+  "per pack":"pro Packung", "pieces":"Stück",
+  "second variant":"zweite Variante",
+  /* fixings */
+  "Screw with wall plug":"Schraube mit Dübel", "Wall plugs":"Dübel",
+  "six-leg wall plugs":"Sechs-Steg-Dübel", "star-drive screws":"Torx-Schrauben",
+  "wall plugs":"Dübel",
+  "per bag":"pro Beutel", "window box":"Sichtbox", "per bottle":"pro Dose",
+  "sets":"Sets",
+  /* shared adjectives — last, so the phrases above win */
+  "transparent":"transparent", "light grey":"hellgrau",
+  "black":"schwarz", "white":"weiß", "grey":"grau", "yellow":"gelb", "blue":"blau",
+  "green":"grün", "red":"rot", "brown":"braun", "clear":"transparent",
+  "large":"groß", "small":"klein", "round":"rund", "oval":"oval"
+};
+/* Longest first so "Clear packing tape" beats "clear", built once rather than per row.
+   Every term is fenced with \b where it begins or ends on a word character. Without that fence a
+   regex alternation picks the LEFTMOST match, not the longest — so a short term like "out" sitting
+   earlier in the string beats the long phrase it is part of, and "outdoor weatherproof enclosure"
+   comes back as "Ausgängedoor weatherproof enclosure". Length ordering alone does not save you. */
+const fence = k => (/^\w/.test(k) ? "\\b" : "")
+  + k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")
+  + (/\w$/.test(k) ? "\\b" : "");
+const DESC_RE = new RegExp(
+  Object.keys(DESC_DE).sort((a,b)=>b.length-a.length).map(fence).join("|"), "g");
+const DESC_LC = {}; Object.keys(DESC_DE).forEach(k=>DESC_LC[k.toLowerCase()]=DESC_DE[k]);
+
+/* Patterns rather than fixed terms: these carry a number that has to survive into the German. */
+const DESC_PAT = [
+  [/(\d+)\s*in\s*\/\s*(\d+)\s*out\b/gi, "$1 Eingänge / $2 Ausgänge"],
+  /* "100pc pack" — the term is glued to the digits, so no word boundary exists for the glossary
+     fence to catch and it has to be matched as a pattern instead. */
+  [/(\d+)pc pack\b/gi, "$1 Stück-Packung"],
+  [/(\d+)-way\b/gi,  "$1-fach"],
+  [/(\d+)-gang\b/gi, "$1-fach"],
+  [/(\d+)-type\b/gi, "Typ-$1"],
+  [/(\d+)in\b/g,     "$1 Zoll"],
+  /* German decimal comma. Only where the number is followed by a unit, or is the low end of a
+     range whose high end carries one ("0.85–0.9mm wall") — a blind swap would rewrite model codes
+     like PCT-223 and TL-3335 into something the vault could never be searched for. */
+  [/(\d)\.(\d+)(?=\s?[–—-]\s?\d+(?:\.\d+)?\s?(?:mm²|mm|cm|kg|m\b|W\b|V\b|A\b))/g, "$1,$2"],
+  [/(\d)\.(\d+)(?=\s?(?:mm²|mm|cm|kg|m\b|W\b|V\b|A\b))/g, "$1,$2"]
+];
+
+function deDesc(s){
+  if(!s) return s;
+  let out = s.replace(DESC_RE, m => DESC_LC[m.toLowerCase()] ?? m);
+  DESC_PAT.forEach(([re,to]) => { out = out.replace(re,to); });
+  return out;
+}
+const catName  = c => (LANG==="de" && CAT_DE[c])  ? CAT_DE[c]  : c;
+const typeName = v => (LANG==="de" && TYPE_DE[v]) ? TYPE_DE[v] : v;
+const descName = v => (LANG==="de") ? deDesc(v) : v;
+
+/* The feed carries 4 decimal places. The € is converted from the ROUNDED pound figure — the same
+   one printed under it — so that a staff member who checks the sum on screen (£1.39 × 1.2) gets
+   the number the page shows. Converting from full precision is fractionally more accurate but can
+   land a cent away from the visible arithmetic, and on a reference page people cross-check by eye;
+   an answer that looks wrong is worse than one that is half a cent off. These are guidance
+   thresholds, not invoice amounts. */
+const p2  = v => Math.round(Number(v)*100)/100;
+/* Each currency keeps its own conventions — "7,32 €" and "£6.10". Formatting follows the MONEY, not
+   the interface language: a euro amount written the British way would be read as a different number
+   by the people it is for. */
+const fmt = (v, cur) => cur === "eur"
+  ? Number(v).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €"
+  : "£" + Number(v).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* Feed pounds -> the currency on display. In UK mode `rate()` is 1, so the figure is the feed's own
+   number with nothing done to it. */
+const cur2 = g => p2(p2(g) * rate());
+/* Primary figure, in the selected currency. */
+const eur = v => (v==null||v==="") ? null : fmt(cur2(v), CUR);
+/* The small cross-check line underneath, always the OTHER currency — so whichever view you are in,
+   the figure you are not looking at is still one glance away. */
+const gbp = v => (v==null||v==="") ? null :
+  (CUR === "eur" ? "£" + p2(v).toFixed(2) : fmt(p2(p2(v)*FX), "eur"));
+
+const SRC_TXT = {
+  "market evidence":  {de:"belegt — das haben wir erreicht", en:"proven — we have banked this"},
+  "finish evidence":  {de:"belegt für dieses Finish — eine andere Farbe hat es erreicht",
+                       en:"proven on this finish — another colour has banked it"},
+  "set by Mani":      {de:"von Mani festgelegt", en:"set by Mani"},
+  "category default": {de:"Schätzung — Kategorieregel", en:"estimate — category rule"}
+};
+const FIN_TXT = {
+  "brushed":     {de:"gebürstet", en:"brushed"},
+  "electroplated":{de:"galvanisiert", en:"electroplated"},
+  "rustic":      {de:"rustikal", en:"rustic"},
+  "spray":       {de:"lackiert", en:"spray"}
+};
+
+/* ================================ CHROME ==================================================== */
+function paintChrome(){
+  document.documentElement.lang = LANG;
+  $("h1").textContent = t("title");
+  $("tagline").innerHTML = t("tagline");
+  $("q").placeholder = t("search");
+  $("catlabel").textContent = t("catLabel");
+  $("skulabel").textContent = t("skuLabel");
+  $("fresh").textContent = t("updated");
+  $("refresh").textContent = t("refresh");
+  /* In UK mode there is no conversion to describe, so the box says so rather than showing a factor
+     that is not being applied — a rate on screen that nothing uses is worse than no rate. */
+  $("fxbox").innerHTML = CUR === "eur"
+    ? esc(t("fx"))+' <b>£1 → €'+ FX.toLocaleString("de-DE",{minimumFractionDigits:2})
+      + '</b> <span style="color:var(--mut)">'+esc(t("fxnote"))+'</span>'
+    : '<b>'+esc(t("curUkOn"))+'</b> <span style="color:var(--mut)">'+esc(t("curUkNote"))+'</span>';
+  $("lang").querySelectorAll("button").forEach(b =>
+    b.classList.toggle("on", b.getAttribute("data-l")===LANG));
+  $("cur").querySelectorAll("button").forEach(b =>
+    b.classList.toggle("on", b.getAttribute("data-c")===CUR));
+
+  $("notes").innerHTML =
+      '<div class=note><b>'+esc(t("warnHead"))+'</b> '+t("warnBody")+'</div>'
+    + '<div class=ladder>'
+      + '<div><b style="color:var(--thrv)">'+esc(t("thriveHead"))+'</b> '+t("thriveBody")+'</div>'
+      + '<div><b style="color:var(--heal)">'+esc(t("healHead"))+'</b> '+t("healBody")+'</div>'
+      + '<div><b style="color:var(--surv)">'+esc(t("survHead"))+'</b> '+t("survBody")+'</div>'
+      + '<div><b style="color:var(--flr)">'+esc(t("floorHead"))+'</b> '+t("floorBody")+'</div>'
+      + '<div class=sub>'+t("ladderFoot")+'</div>'
+    + '</div>'
+    + (LANG==="de" ? '<div class=ladder style="border-left-color:var(--mut)"><div class=sub>'
+        + t("trNote")+'</div></div>' : '');
+}
+/* Switching currency also converts the postage field, so the real cost carries over instead of
+   £4.99 silently standing in for €4.99 — the same number in two currencies is a different cost. */
+$("cur").querySelectorAll("button").forEach(b => b.onclick = () => {
+  const next = b.getAttribute("data-c");
+  if(next === CUR) return;
+  const post = num("cPost");
+  if(isFinite(post) && post > 0){
+    $("cPost").value = (next === "eur" ? p2(post * FX) : p2(post / FX))
+      .toFixed(2).replace(".", next === "eur" ? "," : ".");
+  }
+  CUR = next;
+  localStorage.setItem("bp_cur", CUR);
+  paintChrome(); render(); paintCalcList(); renderCalc();
+});
+
+$("lang").querySelectorAll("button").forEach(b => b.onclick = () => {
+  LANG = b.getAttribute("data-l");
+  localStorage.setItem("bp_lang", LANG);
+  paintChrome(); paintCalcChrome(); paintSgChrome(); paintTabs();
+  renderCats(); render(); paintCalcList(); renderCalc();
+});
+
+/* Report what actually failed. A render bug reported as a network outage sends whoever debugs it
+   to entirely the wrong place. */
+function fail(e){
+  const net = (e instanceof TypeError);
+  console.error("balancepreis:", e);
+  $("out").innerHTML = '<div class=err>'
+    + (net ? esc(t("unreach")) : esc(t("rendfail"))+esc(e&&e.message||String(e))) + '</div>';
+}
+function showStamp(){
+  const txt = !STAMP ? "" : t("laststamp")
+    + new Date(STAMP).toLocaleString(LANG==="de"?"de-DE":"en-GB") + t("selfupd");
+  $("stamp").textContent  = txt;
+  $("stamp2").textContent = txt;
+}
+
+/* Manual refresh. The adaptive poll already picks changes up within seconds, but someone who has
+   just been told "I've updated it" wants to confirm it NOW rather than trust a timer they cannot
+   see. Goes through loadFull, so it is the same path as an automatic update. */
+$("refresh").onclick = function(){
+  const b = this;
+  b.disabled = true; b.textContent = t("refreshing");
+  loadFull(false).finally(() => { b.disabled = false; b.textContent = t("refresh"); });
+};
+function flash(){
+  const f=$("fresh"); f.classList.add("on");
+  clearTimeout(flash._t); flash._t=setTimeout(()=>f.classList.remove("on"),3500);
+}
+
+/* Options are keyed on the ENGLISH category, which is what the feed and the UK page use; only the
+   label is translated. Switching language must never change which category you are looking at.
+   The count rides in the label because "which of these actually has products in it" is the first
+   thing anyone wants from this list. */
+function renderCats(){
+  const cats = [...new Set(ROWS.map(r=>r.category||"Other"))]
+    .sort((a,b)=>catName(a).localeCompare(catName(b), LANG==="de"?"de":"en"));
+  $("cats").innerHTML = cats.map(c =>
+    '<option value="'+esc(c)+'"'+(c===CAT?' selected':'')+'>'+esc(catName(c))
+    +' ('+ROWS.filter(r=>(r.category||"Other")===c).length+')</option>').join("");
+}
+/* Changing category clears the SKU pick. Carrying it over would filter the new category down to a
+   SKU that does not live in it, and the page would come back empty for no reason the reader can see. */
+$("cats").onchange = function(){ CAT = this.value; SKU = ""; render(); };
+
+/* One option per SKU in the CURRENT category, so the list stays at most ~80 long instead of 317.
+   The label carries the description because a PENDING reference on its own identifies nothing —
+   "PENDING-226" tells a picker less than "Clear packing tape, 48mm × 50m" does. */
+let skuCatPainted = null;
+function renderSkus(catRows, force){
+  if(!force && skuCatPainted === CAT+"|"+LANG) return;   // rebuilding mid-keystroke would close an open picker
+  skuCatPainted = CAT+"|"+LANG;
+  const sorted = catRows.slice().sort((a,b)=>String(a.seller_sku).localeCompare(String(b.seller_sku)));
+  $("skus").innerHTML =
+    '<option value="">'+esc(t("allSkus",catRows.length))+'</option>'
+    + sorted.map(r=>{
+        const d = descName(r.product_description||"");
+        const lab = r.seller_sku + (d ? " — "+d : "");
+        return '<option value="'+esc(r.seller_sku)+'"'+(r.seller_sku===SKU?' selected':'')+'>'
+             + esc(lab.length>70 ? lab.slice(0,69)+"…" : lab)+'</option>';
+      }).join("");
+  $("skus").value = SKU;
+}
+$("skus").onchange = function(){ SKU = this.value; render(); };
+
+function apply(j){
+  ROWS  = j.rows || [];
+  STAMP = j.published_at || null;
+  const cats = [...new Set(ROWS.map(r=>r.category||"Other"))];
+  if(!CAT || !cats.includes(CAT)) CAT = cats.includes(DEFAULT_CAT) ? DEFAULT_CAT : cats.sort()[0];
+  skuCatPainted = null;            // a feed update can add, drop or re-describe SKUs
+  indexImages();
+  renderCats(); render(); showStamp();
+  /* The calculator reads the same ROWS, so a live price change has to flow through to it too —
+     otherwise the tab quietly keeps quoting a listing price built on a superseded Balance Price. */
+  paintCalcList(); renderCalc();
+}
+function loadFull(first){
+  return fetch(FEED,{cache:"no-store"}).then(r=>r.json()).then(j=>{
+    if(!j.ok){ $("out").innerHTML='<div class=err>'+esc(t("loadfail"))+esc(j.error||"")+'</div>'; return; }
+    apply(j);                       // apply() keeps the staff member on the category they were on
+    if(!first) flash();
+  }).catch(fail);
+}
+
+/* Adaptive poll, same shape as the source page: a 64-byte version check, hard while someone is
+   actually using the page, slow when idle, off entirely when the tab is hidden. */
+const POLL_ACTIVE=8000, POLL_IDLE=60000, ACTIVE_WINDOW=180000;
+let lastTouch=Date.now(), pollTimer=null;
+["pointerdown","keydown","wheel","touchstart"].forEach(ev=>
+  document.addEventListener(ev,()=>{lastTouch=Date.now();schedule();},{passive:true}));
+function checkForUpdate(){
+  if(document.hidden) return;
+  fetch(FEED+"?meta=1",{cache:"no-store"}).then(r=>r.json()).then(m=>{
+    if(m && m.ok && m.published_at && m.published_at!==STAMP) loadFull(false);
+  }).catch(()=>{});   // a failed check is not worth showing; another is seconds away
+}
+function schedule(){
+  clearTimeout(pollTimer);
+  if(document.hidden) return;
+  const active = (Date.now()-lastTouch) < ACTIVE_WINDOW;
+  pollTimer = setTimeout(()=>{checkForUpdate();schedule();}, active?POLL_ACTIVE:POLL_IDLE);
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){ clearTimeout(pollTimer); return; }
+  lastTouch=Date.now(); checkForUpdate(); schedule();
+});
+
+/* Click a photo to see it full size. Delegated from the document, so it survives every re-render
+   after a price update — per-row binding would silently die the moment the table redrew, and
+   nobody would notice until they clicked. */
+document.addEventListener("click", e=>{
+  const box=$("lbx");
+  if(box.classList.contains("on")){ box.classList.remove("on"); return; }
+  const img = e.target.closest && e.target.closest("img.thm");
+  if(!img) return;
+  $("lbximg").src = img.src; box.classList.add("on");
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("lbx").classList.remove("on"); });
+$("q").oninput = function(){ Q=this.value.trim().toLowerCase(); render(); };
+
+/* =============================== GROUPING ====================================================
+   This MUST match the UK page, or owner and staff read the same products two different ways.
+   Some categories are a RANGE of unrelated products (tapes, bulbs, trunking) — those group by
+   product_type. The rest are a SHAPE sold in several finishes (lampshades, ceiling roses) — those
+   group by family_key, and each table is a finish ladder read cheapest first.
+   Keys stay ENGLISH so grouping is identical in both languages; only labels translate.
+   ============================================================================================ */
+const GROUP_BY_TYPE = {"Bulbs":1,"PVC Trunking & Accessories":1,"Tile Levelling & Accessories":1,
+                       "Adhesive tapes":1,"Mail bags":1};
+function groupsByType(rows){
+  if(GROUP_BY_TYPE[CAT]) return true;
+  if(!rows || rows.length < 2) return false;
+  return rows.filter(r=>r.product_type).length / rows.length >= 0.6;
+}
+function families(rows){
+  const byType = groupsByType(rows), f = {};
+  rows.forEach(r=>{
+    const k = byType ? (r.product_type || (CAT==="Bulbs" ? "Other bulbs" : "Other"))
+                     : (r.family_key || r.seller_sku);
+    (f[k]=f[k]||[]).push(r);
+  });
+  return f;
+}
+/* Cheapest first, on FLOOR — the same axis the UK page sorts on, so a finish ladder reads in the
+   same order on both surfaces even though Floor itself is not printed here. All four stages come
+   off the same cost base, so this is also cheapest-first for the columns that ARE shown. */
+const byLadder = (a,b) => (+a.net_floor_gbp||0)-(+b.net_floor_gbp||0)
+  || String(a.finish_code||"").localeCompare(String(b.finish_code||""));
+/* Cable & Flex block order (Mani): 2-core round, 2-core twisted, 3-core round, 3-core twisted,
+   Hemp last — the way the range is actually thought about, not alphabetically. Matched on the
+   English key, so the order holds in German too. */
+const cableRank = n => {
+  const m = /^(\d)-core (round|twisted)/.exec(n||''); if(!m) return null;
+  return (/hemp/i.test(n)?100:0) + (+m[1]-2)*10 + (m[2]==='twisted'?1:0);
+};
+
+/* A colour-neutral pencil drawing for cable rows. A photo shows ONE colour; these rows deliberately
+   speak for every colour, so the drawing is the honest picture. Hemp keeps its photo — it is a
+   different MATERIAL, not a colour. */
+function svgWrap(inner,title){
+  return '<svg class="thm" style="border:none;background:none" viewBox="0 0 40 40" width="44" height="44"'
+    +' role="img" aria-label="'+esc(title)+'"><title>'+esc(title)+'</title>'+inner+'</svg>';
+}
+function cableGlyph(fam){
+  const m = /^CL(\d)([TR])[A-Z]{0,2}\|(.+)$/.exec(String(fam||"")); if(!m) return null;
+  const cores=+m[1], twist=m[2]==="T", len=m[3];
+  let inner="";
+  if(twist){
+    for(let i=0;i<cores;i++){
+      const ph=(i*2*Math.PI)/cores; let d="";
+      for(let x=4;x<=36;x+=2) d+=(x===4?"M":"L")+x+" "+(20+6*Math.sin((x-4)/5+ph)).toFixed(1);
+      inner+='<path d="'+d+'" fill="none" stroke="currentColor" stroke-width="1.6" '
+            +'stroke-linecap="round" opacity="'+(0.5+0.22*i).toFixed(2)+'"/>';
+    }
+  }else{
+    inner+='<rect x="3" y="15.5" width="21" height="9" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>';
+    inner+='<circle cx="31" cy="20" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/>';
+    for(let i=0;i<cores;i++){
+      const a=-Math.PI/2+(i*2*Math.PI)/cores;
+      inner+='<circle cx="'+(31+3.1*Math.cos(a)).toFixed(1)+'" cy="'+(20+3.1*Math.sin(a)).toFixed(1)
+            +'" r="1.7" fill="currentColor" opacity=".8"/>';
+    }
+  }
+  const label = LANG==="de"
+    ? cores+"-adrige "+(twist?"verdrillte Leitung":"Rundleitung")+" · "+len
+    : cores+"-core "+(twist?"twisted":"round")+" cable · "+len;
+  return svgWrap(inner, label);
+}
+
+function tiles(rows){
+  const tile=(k,v,n)=>'<div class=tile><div class=k>'+esc(k)+'</div><div class=v>'+v
+    +'</div><div class=n>'+esc(n||'')+'</div></div>';
+  const med = a => { const s=a.filter(v=>isFinite(v)&&v>0).sort((x,y)=>x-y);
+                     return s.length ? s[Math.floor(s.length/2)] : null; };
+  const mh = med(rows.map(r=>+r.net_healthy_gbp));
+  const withT = rows.filter(r=>r.net_thrive_gbp!=null);
+  const ev = rows.filter(r=>["market evidence","finish evidence","set by Mani"].indexOf(r.ceiling_source)>=0).length;
+  /* Headroom measured Survive -> Thrive, not Floor -> Thrive: Floor is not a level we sell at, so
+     counting from it would inflate the number with money that was never on the table. */
+  const head = withT.reduce((s,r)=> s + ((+r.net_thrive_gbp||0) - (+r.net_survive_gbp||0)), 0);
+  const below = rows.filter(r=>r.market_below_floor).length;
+  return '<div class=tiles>'
+    + tile(t("tProducts"), rows.length, catName(CAT))
+    + tile(t("tMedHeal"), mh==null?'—':eur(mh), t("tMedHealN"))
+    + tile(t("tThriveSet"), withT.length+t("tOf")+rows.length, t("tThriveSetN", ev, withT.length-ev))
+    + tile(t("tHead"), eur(head), t("tHeadN"))
+    + (below ? tile(t("tBelow"), below, t("tBelowN")) : '')
+    + '</div>';
+}
+
+function head(){
+  return '<thead><tr><th class=w56></th><th class=fin>'+esc(t("colFinish"))+'</th>'
+    + '<th>'+esc(t("colProduct"))+'</th>'
+    + '<th class="n flr">Floor <span class=hsub>'+esc(t("colFloor"))+'</span></th>'
+    + '<th class="n surv">Survive <span class=hsub>'+esc(t("colSurv"))+'</span></th>'
+    + '<th class="n heal">Healthy <span class=hsub>'+esc(t("colHeal"))+'</span></th>'
+    + '<th class="n thrv">Thrive <span class=hsub>'+esc(t("colThrv"))+'</span></th>'
+    + '<th class=src>'+esc(t("colSrc"))+'</th></tr></thead>';
+}
+function cell(v, cls){
+  if(v==null||v==="") return '<td class="n eur '+cls+'"><span class=ref>'+esc(t("notset"))+'</span></td>';
+  return '<td class="n eur '+cls+'"><b>'+eur(v)+'</b><div class=gbp>'+gbp(v)+'</div></td>';
+}
+
+function row(r){
+  const tier = (r.finish_tier||"").toLowerCase();
+  const pend = !!r.needs_sku;
+  const isCable = r.category === "Cable & Flex";
+  const isHemp  = /hemp/i.test(r.product_type||"");
+  const glyph = (isCable && !isHemp) ? cableGlyph(r.family_key)
+              : (isCable && isHemp && !r.image_url) ? cableGlyph(r.family_key) : null;
+  /* market_below_floor: the price the market actually pays sits UNDER our own floor. Shown rather
+     than smoothed — the honest answer is that this product does not currently clear our minimum. */
+  const mbf = !!r.market_below_floor;
+  const rawDesc = r.product_description || "";
+  const shown   = descName(rawDesc);
+  const isTr    = LANG==="de" && shown !== rawDesc;
+  const tierTxt = tier && tier!=="spray" ? ((FIN_TXT[tier]&&FIN_TXT[tier][LANG]) || tier) : null;
+  const img = imageFor(r);
+  const added = SKUADD[r.seller_sku];
+  return '<tr>'
+   + '<td class=w56>'+(glyph ? glyph
+       : img ? '<img class=thm loading=lazy src="'+esc(img)+'" alt="">'
+       : '<span class=noimg title="'+esc(t("nophoto"))+'"></span>')+'</td>'
+   + '<td class="fin mono"><b>'+esc(r.finish_code||"—")+'</b>'
+     + (tierTxt ? ' <span class=pill>'+esc(tierTxt)+'</span>' : '')+'</td>'
+   + '<td>'
+     + (rawDesc ? '<div class="desc'+(isTr?' tr':'')+'"'
+         + (isTr ? ' title="'+esc(rawDesc)+'"' : '')+'>'+esc(shown)+'</div>' : '')
+     /* When a SKU has been typed in, IT is the reference people will use, so it leads and the
+        PENDING ref drops to a struck-through trace — keeping the old one first would leave the
+        wrong reference as the most readable thing on the row. */
+     + (added
+        ? '<div class=ref><b class=addedsku>'+esc(added)+'</b> '
+          + '<span class="pill p-add">'+esc(t("sgLocalPill"))+'</span> '
+          + '<s>'+esc(r.seller_sku)+'</s></div>'
+        : '<div class=ref>'+esc(r.seller_sku)
+          + (pend ? ' <span class=pill>'+esc(t("skuPend"))+'</span>' : '')+'</div>')
+     + (mbf ? '<div class=desc><span class="pill p-warn">'+esc(t("mbfPill"))+'</span> '
+            + '<span class=ref>'+esc(t("mbfText"))+'</span></div>' : '')
+     + '<button class=fixbtn data-sg="'+esc(r.seller_sku)+'" data-sgc="'+esc(r.category||"")+'">'
+     + esc(pend ? t("fixKnow") : t("fixEdit"))+'</button>'
+   + '</td>'
+   + cell(r.net_floor_gbp,'flr')
+   + cell(r.net_survive_gbp,'surv')
+   + cell(r.net_healthy_gbp,'heal')
+   + cell(r.net_thrive_gbp,'thrv')
+   + '<td class=src>'+esc((SRC_TXT[r.ceiling_source]&&SRC_TXT[r.ceiling_source][LANG])
+       || (LANG==="de"?"noch nicht gesetzt":"not set yet"))+'</td>'
+   + '</tr>';
+}
+
+function render(){
+  if($("cats").value !== CAT) $("cats").value = CAT;   // keep the picker in step with programmatic changes
+
+  const catRows = ROWS.filter(r => (r.category||"Other") === CAT);
+  /* The SKU list is built from the category BEFORE the SKU filter is applied — build it from the
+     filtered rows and picking a SKU would leave that SKU as the only option you could ever pick. */
+  renderSkus(catRows);
+  if(SKU && !catRows.some(r=>r.seller_sku===SKU)) SKU = "";   // stale after a feed update
+  $("skus").value = SKU;
+  document.querySelectorAll(".catbox")[1].classList.toggle("active", !!SKU);
+
+  let rows = SKU ? catRows.filter(r=>r.seller_sku===SKU) : catRows;
+  /* Search covers BOTH languages at once: someone who reads the German page still gets handed
+     English SKUs and English part numbers by everyone else, and typing either must work. */
+  if(Q) rows = rows.filter(r =>
+    ((r.seller_sku||"")+" "+(SKUADD[r.seller_sku]||"")+" "
+     +(r.finish_code||"")+" "+(r.family_key||"")+" "
+     +(r.product_type||"")+" "+typeName(r.product_type||"")+" "
+     +(r.product_description||"")+" "+descName(r.product_description||""))
+    .toLowerCase().indexOf(Q) >= 0);
+  if(!rows.length){ $("out").innerHTML='<div class="sub" style="margin-top:14px">'+esc(t("nohits"))+'</div>'; return; }
+
+  const byType = groupsByType(rows);
+  const fam = families(rows);
+  const label = k => byType ? typeName(k) : k;      // family keys are SKU stems — never translated
+  const keys = Object.keys(fam).sort((a,b)=>{
+    const ra=cableRank(a), rb=cableRank(b);
+    if(ra!=null && rb!=null) return ra-rb;
+    return label(a).localeCompare(label(b), LANG==="de"?"de":"en");
+  });
+  /* A type with a single product is still its own block when the whole category is ordered that
+     way — pushing it into a mixed "single products" table hides it from the range it belongs to. */
+  const oneBlockEach = keys.length>0 && keys.every(k=>cableRank(k)!=null);
+  const multi   = oneBlockEach ? keys : keys.filter(k=>fam[k].length>1);
+  const singles = oneBlockEach ? []   : keys.filter(k=>fam[k].length===1);
+
+  let h = tiles(rows);
+
+  const pending = rows.filter(r=>r.needs_sku).length;
+  if(pending) h += '<div class=note style="border-left-color:var(--accent)">'+t("pendNote",pending)+'</div>';
+
+  if(multi.length){
+    h += '<h2>'+esc(byType ? t("byType") : t("byFam"))+'</h2>'
+       + '<div class=sub>'+esc(byType ? t("byTypeSub") : t("byFamSub"))+'</div>';
+    multi.forEach(k=>{
+      const g = fam[k].slice().sort(byLadder);
+      const v = g.map(x=>+x.net_healthy_gbp).filter(n=>n>0);
+      const lo = Math.min.apply(null,v), hi = Math.max.apply(null,v);
+      const uniform = v.length && lo>0 && (hi-lo)/lo <= 0.02;
+      h += '<div class=box><div class=boxhead>'
+        + '<div class=boxname>'+esc(label(k))+'</div>'
+        + '<div class=sub>'+esc(byType ? t("nProd",g.length) : t("nVar",g.length))+' · '
+        /* A type block is a set of unrelated products, so a spread badge there would read a range
+           across different items as if it were a finish premium. State the range instead. */
+        + (byType ? '<span class="pill">Healthy '+eur(lo)+(lo===hi?'':' – '+eur(hi))+'</span>'
+           : uniform ? '<span class="pill p-ok">'+esc(t("onePrice",g.length))+'</span>'
+                     : '<span class="pill p-spread">'+esc(t("spread",(hi/lo).toFixed(hi/lo<1.1?2:1)))+'</span>')
+        + '</div></div>'
+        + '<div class=tw><table>'+head()+'<tbody>'+g.map(row).join("")+'</tbody></table></div></div>';
+    });
+  }
+  if(singles.length){
+    h += '<h2>'+esc(byType ? t("singType") : t("singFam"))
+       + ' <span class=sub>('+singles.length+esc(byType ? t("singTypeN") : t("singFamN"))+')</span></h2>'
+       + '<div class=box><div class=tw><table>'+head()+'<tbody>'
+       + singles.sort((a,b)=>label(a).localeCompare(label(b), LANG==="de"?"de":"en"))
+           .map(k=>row(fam[k][0])).join("")+'</tbody></table></div></div>';
+  }
+  $("out").innerHTML = h;
+}
+
+/* ============================== ADD / CORRECT A SKU ==========================================
+   Local only. Mani 2026-08-07: "no need to spot this to mani for german html" — so the submit-to-
+   review-queue path, the estate endpoint and its public key are all removed. This page now makes
+   exactly one network call, the read of the price feed, and sends nothing anywhere.
+   Consequence worth knowing: a SKU entered here fixes THIS machine's view and nothing else. It does
+   not reach the vault, so it will not appear for anyone else and will not correct a listing.
+   ============================================================================================ */
+let SG = {sku:null, cat:null};
+
+/* ---- LOCALLY ADDED SKUs -------------------------------------------------------------------
+   The feed is read-only from here: this page can display the vault, it cannot write to it. So a
+   SKU typed in goes into localStorage and takes effect on this machine immediately, while the
+   optional send to Mani is what makes it permanent for everyone. Both paths are offered rather
+   than pretending the local entry has reached the vault — a SKU that looks saved but is not is
+   how a wrong reference ends up on a listing.
+   Keyed by the feed's own seller_sku (the PENDING ref), so a feed update that finally assigns the
+   real SKU simply replaces the row and the override stops being consulted. */
+const SKUADD_KEY = "bp_sku_added";
+let SKUADD = {};
+try{ SKUADD = JSON.parse(localStorage.getItem(SKUADD_KEY) || "{}") || {}; }catch(e){ SKUADD = {}; }
+const saveSkuAdd = () => localStorage.setItem(SKUADD_KEY, JSON.stringify(SKUADD));
+const shownSku = r => SKUADD[r.seller_sku] || r.seller_sku;
+
+/* "If I add a SKU it needs to fetch the correct image": when the SKU typed in already exists
+   elsewhere in the feed, that row's photo is the right photo, so adopt it. Built fresh per render
+   because the feed reloads whenever Mani publishes. */
+let SKU_IMG = {};
+function indexImages(){
+  SKU_IMG = {};
+  ROWS.forEach(r => { if(r.image_url) SKU_IMG[String(r.seller_sku).toUpperCase()] = r.image_url; });
+}
+const imageFor = r => {
+  const add = SKUADD[r.seller_sku];
+  return (add && SKU_IMG[add.toUpperCase()]) || r.image_url || "";
+};
+
+function paintSgChrome(){
+  $("sgtitle").textContent   = t("sgTitle");
+  $("sglcorrect").textContent= t("sgCorrect");
+  $("sgcancel").textContent  = t("sgCancel");
+  $("sgsave").textContent    = t("sgSaveLocal");
+  $("sgremove").textContent  = t("sgRemove");
+  $("sglocalwhy").innerHTML  = t("sgLocalWhy");
+}
+function sgMsg(txt, bad){ const m=$("sgmsg"); m.textContent=txt; m.className="sgmsg "+(bad?"bad":"ok"); }
+
+/* Delegated, so the button keeps working through every re-render after a price update — binding
+   per row would silently stop working the moment the table redrew, and nobody would notice until
+   they clicked. */
+document.addEventListener("click", function(e){
+  const b = e.target.closest && e.target.closest(".fixbtn");
+  if(!b) return;
+  SG = {sku:b.getAttribute("data-sg"), cat:b.getAttribute("data-sgc")};
+  const tr = b.closest("tr"), d = tr && tr.querySelector(".desc");
+  $("sgsku").textContent  = SG.sku;
+  $("sgdesc").textContent = d ? (" — "+d.textContent.trim()) : "";
+  $("sgcorrect").value = SKUADD[SG.sku] || "";     // reopening shows what was entered before
+  sgMsg("", false);
+  $("sgsave").disabled = false; $("sgsave").textContent = t("sgSaveLocal");
+  $("sgremove").hidden = !SKUADD[SG.sku];
+  $("sgbox").classList.add("on");
+  $("sgcorrect").focus();
+});
+
+/* Save on this machine. No name required — this is not a message to anyone, it is the operator
+   fixing what their own screen shows. */
+$("sgsave").onclick = function(){
+  const v = $("sgcorrect").value.trim();
+  if(!v){ sgMsg(t("sgNeedSku"), true); $("sgcorrect").focus(); return; }
+  SKUADD[SG.sku] = v; saveSkuAdd();
+  const hit = SKU_IMG[v.toUpperCase()];
+  sgMsg(t("sgSaved") + " — " + (hit ? t("sgImgFound", v) : t("sgImgNone")), false);
+  $("sgremove").hidden = false;
+  render(); paintCalcList();
+};
+$("sgremove").onclick = function(){
+  delete SKUADD[SG.sku]; saveSkuAdd();
+  $("sgcorrect").value = ""; this.hidden = true;
+  sgMsg("", false);
+  render(); paintCalcList();
+};
+$("sgcancel").onclick = () => $("sgbox").classList.remove("on");
+$("sgbox").addEventListener("click", e => { if(e.target===$("sgbox")) $("sgbox").classList.remove("on"); });
+document.addEventListener("keydown", e => { if(e.key==="Escape") $("sgbox").classList.remove("on"); });
+
+/* The photo upload and the submit-to-Mani handler lived here. Both are removed: this page no longer
+   sends anything anywhere, so it makes no network request that could fail and needs no staff name.
+   A photo now only ever arrives from the feed, via the SKU_IMG lookup on the typed SKU. */
+
+/* ============================== PRICE CALCULATION ============================================
+   Works BACKWARDS from the Balance Price — the money that has to reach the business — to the
+   listing price that still leaves it there once the channel, the tax office and the carrier have
+   each taken their share.
+
+     forward:  balance = listing × (1 − fee − vat − other) − postage
+     reverse:  listing = (balance + postage) ÷ (1 − fee − vat − other)
+
+   Every percentage is a share OF THE LISTING PRICE and they add together (Mani 2026-08-07: €0.85 at
+   30% + 20% must list at €1.70). This does NOT match the Balance Price Checker in the German
+   warehouse dashboard, which treats VAT as tax-on-net; see the note in priceFrom.
+
+   ONE engine for every stage. Survive, Healthy and Thrive are not different calculations — they
+   are the same calculation on a different starting figure, which is exactly why a manually typed
+   amount can go through it untouched.
+   ============================================================================================ */
+/* EVERY percentage is a share OF THE LISTING PRICE, and they simply add up (Mani 2026-08-07:
+   a €0.85 balance at 30% fee + 20% VAT must list at €1.70, i.e. 0.85 ÷ 0.50). So:
+
+       balance = listing × (1 − fee − vat − other) − postage
+       listing = (balance + postage) ÷ (1 − fee − vat − other)
+
+   NOTE this differs from the Balance Price Checker in the German warehouse dashboard, which treats
+   VAT as tax-on-net (`price / 1.20`) and charges the fee on the ex-VAT amount. On that basis the
+   same €0.85 lands at €1.46, not €1.70. Mani's rule is the one implemented here; the checker will
+   read lower for the same product until it is changed to match. */
+function priceFrom(balance, feeRate, vatRate, postage, extraRate){
+  extraRate = extraRate || 0;
+  const take = feeRate + vatRate + extraRate;
+  if(!(take < 1)) return null;                          // taking 100% or more has no solution
+  const gross = p => Math.ceil(((balance + p) / (1-take)) * 100) / 100;
+  const parts = (listing, p) => ({
+    listing, fee: listing*feeRate, vat: listing*vatRate, extra: listing*extraRate, postage: p,
+    /* what the seller is actually left with at the rounded-up listing price — always ≥ the target,
+       never below it, which is the whole point of rounding up */
+    net: listing*(1-take) - p
+  });
+  return { balance, incl: parts(gross(postage), postage), excl: parts(gross(0), 0) };
+}
+
+/* Calculator figures are ALREADY in the selected currency (the balance was converted before it got
+   here), so this only formats — it must not convert again. */
+const money = v => (v==null) ? "—" : fmt(v, CUR);
+
+/* The picker offers every SKU in the feed, not just the current category — someone arrives at this
+   tab holding an order line, not a category. */
+function paintCalcChrome(){
+  $("lblSku").textContent    = t("lblSku");
+  $("lblManual").textContent = t("lblManual");
+  $("lblChan").textContent   = t("lblChan");
+  $("lblFee").textContent    = t("lblFee");
+  $("lblExtra").textContent  = t("lblExtra");
+  $("lblVat").textContent    = t("lblVat");
+  $("lblPost").textContent   = t("lblPost");
+  $("cSku").placeholder      = t("skuPh");
+  $("cManual").placeholder   = t("manualPh");
+  $("calcWarn").innerHTML    = t("cVatWarn");
+}
+function paintCalcList(){
+  $("cSkuList").innerHTML = ROWS.slice()
+    .sort((a,b)=>String(shownSku(a)).localeCompare(String(shownSku(b))))
+    .map(r=>{
+      const d = descName(r.product_description||"");
+      return '<option value="'+esc(shownSku(r))+'">'
+           + esc(catName(r.category||"") + (d ? " · "+d : ""))+'</option>';
+    }).join("");
+}
+
+/* ONE table per shipping scenario. They were previously two result columns on one table, which
+   meant the fee/VAT/postage breakdown belonged to the WITH-shipping price only and the
+   WITHOUT-shipping figure sat there with no workings of its own — a number nobody could check.
+   The two scenarios have genuinely different fee and VAT amounts, so they get a table each and
+   every row adds up inside its own table. */
+function calcRow(label, sub, part, balance, showPostage, resultClass){
+  return '<tr>'
+    + '<td class=tier>'+esc(label)+(sub?'<span class=cap>'+esc(sub)+'</span>':'')+'</td>'
+    + '<td class=bal>'+money(balance)+'</td>'
+    /* Selling fee and other costs are ONE column. Split out they showed identical euro figures
+       whenever both rates were 20%, which read as the same number printed twice. The money is still
+       in the calculation — the two rates are named in the header instead. */
+    + '<td class=add><span class=plus>+</span>'+money(part.fee + part.extra)+'</td>'
+    + '<td class=add><span class=plus>+</span>'+money(part.vat)+'</td>'
+    + (showPostage ? '<td class=add><span class=plus>+</span>'+money(part.postage)+'</td>' : '')
+    + '<td class="'+resultClass+'"><b>'+money(part.listing)+'</b></td>'
+    + '</tr>';
+}
+
+function calcTable(results, opts){
+  const anyExtra = results.some(r => r.res.incl.extra > 0);
+  const head = '<thead><tr>'
+    + '<th>'+esc(t("cTier"))+'</th>'
+    + '<th class=n>'+esc(t("cBalance"))+' <span class=hsub>'+esc(t("cBalanceSub"))+'</span></th>'
+    /* Each rate says what it is a percentage OF — without the base named, a 20% column and the 20%
+       VAT column look like the same figure duplicated. */
+    + (anyExtra
+        ? '<th class=n>'+esc(t("cCosts"))+' <span class=hsub>'
+          + esc(t("cCostsSub", opts.totalPct, opts.feePct, opts.extraPct))+'</span></th>'
+        : '<th class=n>'+esc(t("cFee2"))+' <span class=hsub>'+esc(t("cOfNet",opts.feePct))+'</span></th>')
+    + '<th class=n>'+esc(t("cVat2"))+' <span class=hsub>'+esc(t("cOfNet",opts.vatPct))+'</span></th>'
+    + (opts.showPostage ? '<th class=n>'+esc(t("cPost2"))+'</th>' : '')
+    + '<th class="n '+opts.headClass+'">'+esc(t("cResult"))+' <span class=hsub>'+esc(t("cResultSub"))+'</span></th>'
+    + '</tr></thead>';
+  return '<div class=box><div class="boxhead '+opts.headClass+'head">'
+    + '<span class=boxname>'+esc(opts.title)+'</span>'
+    + '<span class=sub>'+esc(opts.subtitle)+'</span></div>'
+    + '<div class=tw><table class=calc>'+head+'<tbody>'
+    + results.map(r => calcRow(r.name, r.sub, opts.pick(r.res), r.res.balance,
+                              opts.showPostage, opts.cellClass)).join("")
+    + '</tbody></table></div></div>';
+}
+
+/* German keyboards produce "7,49". Accept it everywhere rather than silently reading it as 7 or as
+   nothing at all — a calculator that quietly drops the decimals is worse than one that refuses. */
+const num = el => parseFloat(String($(el).value).trim().replace(/\s/g,"").replace(",","."));
+
+function renderCalc(){
+  const feeRate   = (num("cFee")||0)/100;
+  const extraRate = (num("cExtra")||0)/100;
+  const vatRate   = (num("cVat")||0)/100;
+  const postage   = num("cPost")||0;
+  const manual    = num("cManual");
+  const skuTxt  = $("cSku").value.trim();
+  /* A SKU the operator typed in on the Prices tab has to work here too, or the calculator is the
+     one place that still cannot find the product by its real reference. */
+  const hit = skuTxt ? ROWS.find(r=>String(shownSku(r)).toLowerCase()===skuTxt.toLowerCase()
+                                 || String(r.seller_sku).toLowerCase()===skuTxt.toLowerCase()) : null;
+
+  /* Status line first: the reader has to know WHICH number is being used before they read any
+     figure derived from it. */
+  let found = "";
+  if(isFinite(manual) && manual>0){
+    found = '<span class=hit>'+esc(t("cManualOn"))+'</span>'
+          + (skuTxt ? '<span class=ref>'+esc(t("cOverride"))+'</span>' : '');
+  } else if(hit){
+    const d = descName(hit.product_description||"");
+    found = '<span class=hit>'+esc(t("cFoundHit"))+'</span><b>'+esc(shownSku(hit))+'</b>'
+          + (d ? ' — '+esc(d) : '') + ' <span class=ref>'+esc(catName(hit.category||""))+'</span>';
+  } else if(skuTxt){
+    found = '<span class=miss>'+esc(t("cFoundMiss"))+'</span>'+esc(t("cMissTxt"));
+  }
+  $("cFound").innerHTML = found;
+
+  if(feeRate + vatRate + extraRate >= 1){
+    $("calcOut").innerHTML='<div class=err>'+esc(t("cFeeBad2"))+'</div>'; return; }
+
+  /* Stages come from the feed in GBP and are converted with the same rounded-pound rule the price
+     tables use, so a Balance Price read off one tab is the same number the other tab starts from. */
+  const stages = [];
+  if(isFinite(manual) && manual>0){
+    stages.push([t("cManualTier"), manual, null]);
+  } else if(hit){
+    const toEur = g => (g==null||g==="") ? null : cur2(g);   // feed £ -> selected currency
+    [["Floor",  "net_floor_gbp",  t("colFloor")],
+     ["Survive","net_survive_gbp",t("colSurv")],
+     ["Healthy","net_healthy_gbp",t("colHeal")],
+     ["Thrive", "net_thrive_gbp", t("colThrv")]].forEach(([nm,f,sub])=>{
+      const v = toEur(hit[f]);
+      if(v!=null) stages.push([nm, v, sub]);
+    });
+  }
+  if(!stages.length){
+    $("calcOut").innerHTML = '<div class="sub" style="margin-top:14px">'+esc(t("cNothing"))+'</div>';
+    return;
+  }
+
+  const pct = r => (r*100).toFixed(1).replace(/\.0$/,"");
+  const results = stages.map(([nm,val,sub]) =>
+    ({name:nm, sub:sub, res:priceFrom(val, feeRate, vatRate, postage, extraRate)}))
+    .filter(r => r.res);
+  const common = {feePct:pct(feeRate), extraPct:pct(extraRate), vatPct:pct(vatRate),
+                  totalPct:pct(feeRate+extraRate)};
+
+  $("calcOut").innerHTML =
+      '<div class=calcwrap>'
+    + calcTable(results, Object.assign({}, common, {
+        title: t("cListIncl"), subtitle: t("cListInclS"),
+        showPostage: true, pick: r => r.incl, headClass:"listA", cellClass:"list" }))
+    + calcTable(results, Object.assign({}, common, {
+        title: t("cListExcl"), subtitle: t("cListExclS"),
+        showPostage: false, pick: r => r.excl, headClass:"listB", cellClass:"list2" }))
+    + '</div>'
+    + '<div class=calcfoot>'+t("cFoot")+'</div>';
+}
+
+/* The channel sets the fee, but the fee stays editable afterwards — a rate can change without
+   anyone being able to edit this file. */
+$("cChan").onchange = function(){ $("cFee").value = this.value; renderCalc(); };
+["cSku","cManual","cFee","cExtra","cVat","cPost"].forEach(id => $(id).oninput = renderCalc);
+
+/* ================================ TABS ====================================================== */
+let VIEW = "prices";
+function paintTabs(){
+  $("tabs").querySelectorAll("button").forEach(b=>{
+    const v = b.getAttribute("data-v");
+    b.textContent = t(v==="prices" ? "tabPrices" : "tabCalc");
+    b.classList.toggle("on", v===VIEW);
+  });
+  $("view-prices").hidden = VIEW!=="prices";
+  $("view-calc").hidden   = VIEW!=="calc";
+}
+$("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
+  VIEW = b.getAttribute("data-v"); paintTabs(); if(VIEW==="calc") renderCalc();
+});
+
+/* Germany defaults, per Mani: Amazon 30% / eBay 25% / Shopify 20%, VAT 20%, postage €4.99.
+   Other costs default to 0 — Mani 2026-08-07: "dont calculate that 20 percentage". The field stays
+   so a PPC/returns/handling allowance can be modelled deliberately, but nothing is added unless
+   somebody types it. With it at 0 the Kosten column is the selling fee alone. */
+$("cFee").value = "30"; $("cExtra").value = "0"; $("cVat").value = "20"; $("cPost").value = "4.99";
+
+paintChrome();
+paintCalcChrome();
+paintSgChrome();
+paintTabs();
+$("out").innerHTML = '<div class=sub>'+esc(t("loading"))+'</div>';
+schedule();
+loadFull(true);
+</script>
+</body>
+</html>
